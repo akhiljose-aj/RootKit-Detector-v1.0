@@ -18,44 +18,48 @@ def save_to_file(processes):
 
 # RootkitDetectorApp class
 class RootkitDetectorApp:
-
     def __init__ (self, root):
         self.root = root
-        self.root.configure(bg='#2e2e2e')
+        self.root.configure(bg='#1a1a2e')
 
-        heading_label = tk.Label(self.root, text="- Scan for Rootkits -", font=('Arial', 14, 'bold'), fg='white', bg='#2e2e2e')
+        heading_label = tk.Label(self.root, text="- Scan for Rootkits -", font=('Arial', 14, 'bold'), fg='white', bg='#1a1a2e')
         heading_label.pack(pady=10)
 
         self.load_button = tk.Button(self.root, text="Load Process File", command=self.load_file)
-        self.load_button.configure(bg='#808080', fg='white', padx=10, pady=5, font=('Arial', 12, 'bold'))
+        self.load_button.configure( bg='#1a1a2e', fg='white', padx=10, pady=5, font=('Arial', 12, 'bold'))
         self.load_button.pack(pady=20)
-        self.load_button.bind("<Enter>", lambda e: self.load_button.configure(bg="lightgreen", fg='black'))
-        self.load_button.bind("<Leave>", lambda e: self.load_button.configure(bg="#808080"))
+        self.load_button.bind("<Enter>", lambda e: self.load_button.configure(bg="lightgreen", fg='white'))
+        self.load_button.bind("<Leave>", lambda e: self.load_button.configure(bg="#1a1a2e"))
 
-        self.process_text = tk.Text(self.root, width=80, height=20, bg='#3d3d3d', fg='white', font=('Arial', 11))
+        self.process_text = tk.Text(self.root, width=80, height=20, bg='#3a3a5c', fg='white', font=('Arial', 11))
         self.process_text.pack(pady=20, padx=10)
-        # self.process_text(state='disabled')
 
         scrollbar = tk.Scrollbar(self.root, command=self.process_text.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.process_text.config(yscrollcommand=scrollbar.set)
 
         self.check_button = tk.Button(self.root, text="Check for Rootkits", command=self.check_for_rootkits)
-        self.check_button.configure(bg='#808080', fg='white', padx=10, pady=5, font=('Arial', 12, 'bold'))
+        self.check_button.configure(bg='#1a1a2e', fg='white', padx=10, pady=5, font=('Arial', 12, 'bold'))
         self.check_button.pack(pady=30)
-        self.check_button.bind("<Enter>", lambda e: self.check_button.configure(bg="tomato", fg='black'))
-        self.check_button.bind("<Leave>", lambda e: self.check_button.configure(bg="#808080"))
+        self.check_button.bind("<Enter>", lambda e: self.check_button.configure(bg="tomato", fg='white'))
+        self.check_button.bind("<Leave>", lambda e: self.check_button.configure(bg="#1a1a2e"))
 
         self.hidden_processes = []
         self.pro_value = 0
+
 
     def load_file (self):
         file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
         if file_path:
             try:
                 with open(file_path, 'r') as file:
-                    content = file.read()
+                    content= file.read()
+                    self.process_name_list = []
                     self.pro_value = 0
+                    for i in content.splitlines():
+                        process_name = i.split("|")[1].split(":")[1].strip()
+                        self.process_name_list.append(process_name)
+                    # print(process_name_list)
                     self.process_text.delete(1.0, tk.END)
                     self.process_text.insert(tk.END, content)
                     self.hidden_processes = [int(line.strip()) for line in content.splitlines() if line.strip().isdigit()]
@@ -74,6 +78,13 @@ class RootkitDetectorApp:
             return
         else:
             self.process_text.insert(tk.END, "\n\nStarting rootkit detection...\n\n")
+            suspicious_names_1 = ['ZeroAccess','TDL-4 (TDSS) ','Sony BMG Rootkit','Stuxnet','Flame','Necurs','Zeus', 'Mirai', 'Emotet', 'Stuxnet', 'WannaCry', "rootkit_example",
+                                  'NotPetya', 'Ghost', 'DarkComet', "suspicious_process", 'BlackEnergy',
+                                  'Xagent','Sony BMG Rootkit','Stuxnet']
+            for i in self.process_name_list:
+                if i in suspicious_names_1:
+                    self.process_text.insert(tk.END,f'RootKit Found {i}!\n')
+                    messagebox.showwarning('msg',f'Rootkits Detected {i}!')
 
             rootkits_found = []
             for pid in self.hidden_processes:
@@ -97,13 +108,13 @@ class RootkitDetectorApp:
                 messagebox.showinfo("No Rootkits", "No rootkits detected among the processes.")
 
     def is_suspicious(self, proc):
-        suspicious_names = ['Zeus', 'Mirai', 'Emotet', 'Stuxnet', 'WannaCry',
-                            "rootkit_example", 'NotPetya', 'Ghost', 'DarkComet', "suspicious_process",
-                            'BlackEnergy', 'Xagent']
+        suspicious_names = ['ZeroAccess','TDL-4 (TDSS) ','Sony BMG Rootkit','Stuxnet','Flame','Necurs','Zeus', 'Mirai', 'Emotet', 'Stuxnet', 'WannaCry', "rootkit_example",
+                                  'NotPetya', 'Ghost', 'DarkComet', "suspicious_process", 'BlackEnergy',
+                                  'Xagent','Sony BMG Rootkit','Stuxnet']
         if proc.name() in suspicious_names:
             return True
 
-        suspicious_paths = ["/usr/local/bin/rootkit", "C:\\Windows\\System32\\suspicious.exe"," C:\\Windows\\Temp","C:\\Windows\\ConnectionStatus"," C:\\Windows\\WinSecurity"]
+        suspicious_paths = ["/user/local/bin/rootkit", "C:\\Windows\\System32\\suspicious.exe"]
         if proc.exe() in suspicious_paths:
             return True
 
@@ -117,9 +128,7 @@ class RootkitDetectorApp:
             return True
 
         try:
-            unusual = ['tasklist', 'ver', 'ipconfig', 'systeminfo', 'net time', 'netstat', 'whoami',
-                       'net start', 'qprocess', 'query', 'dir', 'net view', 'ping', 'net use', 'type', 'net user',
-                       'net localgroup', 'net group', 'net config', 'net share']
+            unusual = ['tasklist', 'ver', 'ipconfig', 'systeminfo', 'nettime', 'netstat', 'whoami', 'net start', 'qprocess', 'query', 'dir', 'net view', 'ping', 'net use', 'type', 'net user', 'net localgroup', 'net group', 'net config', 'net share']
             for i in unusual:
                 if i in proc.cmdline():
                     return True
@@ -130,12 +139,8 @@ class RootkitDetectorApp:
 
     def has_suspicious_network_activity(self, proc):
         try:
-            suspicious_ips = ["192.168.1.100", "10.0.0.200", "172.16.254.1", "203.0.113.5", "198.51.100.2",
-                              "8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1", "9.9.9.9", "74.125.224.72", "23.235.47.133",
-                              "104.16.99.52", "195.22.26.248", "45.60.103.32", "69.171.250.35", "47.156.224.38"]
-
-            suspicious_ports = [3389, 5900, 1723, 3036, 3306, 5590, 8900, 8080, 21, 22, 23, 25, 52, 53, 80,
-                                110, 111, 135, 144, 149, 443, 444, 999, 995, 6666, 7777, 4444, 5555, 8888]
+            suspicious_ips = ["192.168.1.100", "10.0.0.200", "172.16.254.1", "203.0.113.5", "198.51.100.2", "8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1", "9.9.9.9", "74.125.224.72", "23.235.47.133", "104.16.99.52", "195.22.26.248", "45.60.103.32", "69.171.250.35", "47.156.224.38"]
+            suspicious_ports = [3389, 5900, 1723, 3036, 3306, 5590, 8900, 8080, 21, 22, 23, 25, 52, 53, 80, 110, 111, 135, 144, 149, 443, 444, 999, 995, 6666, 7777, 4444, 5555, 8888]
 
             connections = proc.connections(kind='inet')
             for conn in connections:
@@ -155,10 +160,11 @@ class RootkitDetectorApp:
 class Hiding_viruses:
     def __init__(self, root):
         self.root = root
+        self.root.configure(bg='#1a1a2e')
 
         bold_font = font.Font(weight='bold')
 
-        heading_label = tk.Label(self.root, text="- Hiding Viruses -", font=('Arial', 14, 'bold'), fg='white', bg='#2e2e2e')
+        heading_label = tk.Label(self.root, text="- Hiding Viruses -", font=('Arial', 14, 'bold'), fg='white', bg='#1a1a2e')
         heading_label.pack(pady=10)
 
         # Scrollbar
@@ -166,40 +172,33 @@ class Hiding_viruses:
         scrollbar.pack(side="right", fill="y")
 
         entry = tk.Text(root, height=20, width=80, wrap=tk.WORD, yscrollcommand=scrollbar.set, font=('Arial', 12))
-        entry.configure(state='normal', bg='#555555', fg='white')
+        entry.configure(state='normal', bg='#3a3a5c', fg='white')
         # Define a tag for the heading
         entry.tag_configure("heading", font=('Arial', 16, 'bold'), foreground='yellow')
 
 
         entry.pack(side="left", fill="both")
         # self.Text.pack(pady=20)
-
         entry.insert(tk.END,'''Processes are an unavoidable part of Windows, and it is not unusual to see dozens or hundreds\nof them in Task Manager. Each process is a program or part of a program that is running. Unfortunately, malware creators know this and are known to hide malicious software behind the names of legitimate processes.
 
         Here are some of the most commonly hijacked or duplicated processes,along with where\nthey should be located and how to spot a MALICIOUS VERSION:\n
         ''')
-
         entry.insert(tk.END,"1. Svchost.exe","heading")
         entry.insert(tk.END,'''\nThe Service Host, or svchost.exe, is a shared-service process. It allows various other Windows services to share processes. You will almost certainly see more than one instance of Svchost.exe in Task Manager, but this is normal. If one or more of these files are compromised by malware, you may notice a distinct reduction in performance.
         The legitimate Svchost files should be found in C:\\Windows\\System32.If you\nsuspect it has been hijacked, check C:\\Windows\\Temp. If you see svchost.exe here, it\ncould be a malicious file. Scan the file with your antivirus software, and quarantine it if necessary.\n
         ''')
-
         entry.insert(tk.END, "2. Explorer.exe", "heading")
-        entry.insert(tk.END, '''\nExplorer.exe is responsible for the graphical shell. without it, you would have no Taskbar, Start Menu, File Manager, or even the Desktop.Several viruses can use the Explorer.exe filename to hide behind, including trojan.w32.ZAPCHAST. The real file will be in C:\\Windows.\nIf you find it in System32, you should definitely check it with your antivirus software.\n\n''')
-
+        entry.insert(tk.END, '''\nExplorer.exe is responsible for the graphical shell. Without it, you would have no Taskbar, Start Menu, File Manager, or even the Desktop.Several viruses can use the Explorer.exe filename to hide behind, including trojan.w32.ZAPCHAST. The real file will be in C:\\Windows.\nIf you find it in System32, you should definitely check it with your antivirus software.\n\n''')
         entry.insert(tk.END, "     3. Winlogon.exe", "heading")
         entry.insert(tk.END,'''\nThe Winlogon.exe process is an essential part of the Windows OS. It handles things like loading the user profile during login and locking the computer when the screensaver runs.Several Trojan viruses, including Vundo, can be hidden within or disguised as winlogon.exe. The path of the Winlogon.exe file is C:\\Windows\\System32. If it is in C:\\Windows\\WinSecurity,\nit could be malicious. One good indication that the process has been hijacked is unusually high memory use.\n\n''')
-
         entry.insert(tk.END, "    4. Csrss.exe", "heading")
         entry.insert(tk.END, '''\nThe Client/Server Run-Time Subsystem, or Csrss.exe, is an essential Windows process.The Nimda.E virus has been known to mimic this process, although that is not the only potential threat. The legitimate file should be located in the System32 or SysWOW64 folders. Right-click on the Csrss.exe process in Task Manager and choose Open File Location. If it is located anywhere else, it is likely to be a malicious file.\n\n''')
         entry.insert(tk.END, "   5. Lsass.exe", "heading")
         entry.insert(tk.END, '''\nlsass.exe is an essential process responsible for the security policy on Windows. It verifies the login name and password, among other security procedures. Look for the Lsass.exe file in C:\\Windows\\System32. This is the only place you should find it.If you see it in another location, such as C:\\Windows\\system or C:\\Program Files, act with suspicion and scan the file with your antivirus.\n\n''')
-
         entry.insert(tk.END, "   6. Services.exe", "heading")
         entry.insert(tk.END,'''\nThe Services.exe process is responsible for starting and stopping various essential Windows services. If the file is hijacked, you may notice problems during the startup and shutdown of your PC. Look for the real Services.exe file in the System32 folder. If it is located anywhere else\nlike C:\\Windows\\ConnectionStatus,the file could be a virus.\n\n''')
         entry.insert(tk.END, "   7. Spoolsv.exe", "heading")
         entry.insert(tk.END, '''\nThe Windows Print Spooler Service, or Spoolsv.exe, is an important part of the printing interface.\nIt runs in the background, waiting to manage things like the print queue when required.The true spools file can be found in C:\\Windows\\System32. The fake file will be in C:\\Windows, or in a user profile folder.\n\n''')
-
         entry.insert(tk.END, "   How Do You Check if a Process Is Legitimate?", "heading")
         entry.insert(tk.END, '''\nThe Task Manager is your friend when looking for suspicious activity. Infected processes will often behave erratically, consuming more CPU power and memory than is usual. But that isn't always the case, so here are some other\nways to check a process is legitimate.
 
@@ -238,7 +237,6 @@ class Hiding_viruses:
         entry.tag_add("bold_green", "39.167", "39.223")
         entry.tag_add("bold_green", "41.129", "41.140")
         entry.tag_add("bold_green", "43.113", "43.122")
-
         entry.tag_add("bold_red", "43.168", "43.178")
 
         # Configure the tags
@@ -256,19 +254,18 @@ class Hiding_viruses:
 class SaveProcessesApp:
     def __init__(self, root):
         self.root = root
-        self.root.configure(bg='#2e2e2e')
+        self.root.configure(bg='#1a1a2e')
 
-        heading_label = tk.Label(self.root, text="- Save Processes to File -",
-                                 font=('Arial', 14, 'bold'), fg='white', bg='#2e2e2e')
+        heading_label = tk.Label(self.root, text="- Save Processes to File -", font=('Arial', 14, 'bold'), fg='white', bg='#1a1a2e')
         heading_label.pack(pady=10)
 
         self.scan_button = tk.Button(self.root, text="Scan Processes", command=self.scan_and_save_processes)
-        self.scan_button.configure(bg='#808080', fg='white', padx=10, pady=5, font=('Arial', 12, 'bold'))
+        self.scan_button.configure(bg='#1a1a2e', fg='white', padx=10, pady=5, font=('Arial', 12, 'bold'))
         self.scan_button.pack(pady=20)
-        self.scan_button.bind("<Enter>", lambda e: self.scan_button.configure(bg="lightblue", fg='black'))
-        self.scan_button.bind("<Leave>", lambda e: self.scan_button.configure(bg="#808080"))
+        self.scan_button.bind("<Enter>", lambda e: self.scan_button.configure(bg="lightblue", fg='white'))
+        self.scan_button.bind("<Leave>", lambda e: self.scan_button.configure(bg="#1a1a2e"))
 
-        self.process_listbox = tk.Listbox(self.root, width=80, height=20, bg='#3d3d3d', fg='white', font=('Arial', 11))
+        self.process_listbox = tk.Listbox(self.root, width=80, height=20, bg='#3a3a5c', fg='white', font=('Arial', 11))
         self.process_listbox.pack(pady=20, padx=10)
 
         scrollbar = tk.Scrollbar(self.root, command=self.process_listbox.yview)
@@ -287,7 +284,7 @@ class SaveProcessesApp:
 class MainApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("RootKits Detector v1.00")
+        self.root.title("RootKits Detector")
         self.root.geometry("700x670")
         self.root.configure(bg='#2e2e2e')
         # Disable the resizable Property
